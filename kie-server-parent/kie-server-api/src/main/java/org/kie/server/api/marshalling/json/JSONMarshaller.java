@@ -69,6 +69,7 @@ import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.jsontype.impl.AsWrapperTypeDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.util.ClassUtil;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector;
 import org.drools.core.xml.jaxb.util.JaxbListAdapter;
 import org.drools.core.xml.jaxb.util.JaxbListWrapper;
@@ -88,6 +89,7 @@ public class JSONMarshaller implements Marshaller {
 
     private static boolean formatDate = Boolean.parseBoolean(System.getProperty("org.kie.server.json.format.date", "false"));
     private static String dateFormatStr = System.getProperty("org.kie.server.json.date_format", "yyyy-MM-dd'T'hh:mm:ss.SSSZ");
+    private static boolean useJSR310 = Boolean.parseBoolean(System.getProperty("org.kie.server.json.format.date.jsr310", "false"));
 
     private ThreadLocal<Boolean> stripped = new ThreadLocal<Boolean>() {
         @Override
@@ -243,7 +245,16 @@ public class JSONMarshaller implements Marshaller {
             objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
             customSerializationMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         }
-
+        else if (useJSR310)
+        {
+        	objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        	objectMapper.registerModule(new JavaTimeModule());
+        	objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);  
+        	
+        	customSerializationMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        	customSerializationMapper.registerModule(new JavaTimeModule());
+        	customSerializationMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); 
+        }
         this.classesSet = classes;
 
         // Extend the marshaller with optional extensions
